@@ -1,4 +1,4 @@
-import type { IAuthLoginRes, ICaptcha, IDoubleTokenRes, IUpdateInfo, IUpdatePassword, IUserInfoRes } from './types/login'
+import type { IAuthLoginRes, ICaptcha, IDoubleTokenRes, IMiniDecryptRes, IMiniLoginRes, IUpdateInfo, IUpdatePassword, IUserInfoRes, IWxUserProfile } from './types/login'
 import { http } from '@/http/http'
 
 /**
@@ -82,4 +82,46 @@ export function getWxCode() {
  */
 export function wxLogin(data: { code: string }) {
   return http.post<IAuthLoginRes>('/auth/wxLogin', data)
+}
+
+/**
+ * 微信小程序登录 - 通过code获取openid和session_key
+ * @param code 小程序登录凭证
+ */
+export function miniLogin(code: string) {
+  return http.post<IMiniLoginRes>('/api/v1/wechat/mini/login', { code })
+}
+
+/**
+ * 微信小程序登录 - 解密用户信息并获取access_token
+ * @param data 解密参数
+ */
+export function miniDecrypt(data: { openid: string, encryptedData: string, iv: string, session_key: string }) {
+  return http.post<IMiniDecryptRes>('/api/v1/wechat/mini/decrypt', data)
+}
+
+/**
+ * 微信小程序 - 获取用户信息（需Bearer鉴权）
+ */
+export function getWechatUserInfo() {
+  return http.get<IUserInfoRes>('/api/v1/wechat/user/info')
+}
+
+/**
+ * 微信小程序 - 获取用户信息（头像、昵称等）
+ * @returns Promise 包含encryptedData、iv等加密数据
+ */
+export function getWxUserProfile() {
+  return new Promise<IWxUserProfile>((resolve, reject) => {
+    // #ifdef MP-WEIXIN
+    uni.getUserProfile({
+      desc: '用于完善会员资料',
+      success: res => resolve(res),
+      fail: err => reject(new Error(err.errMsg || '获取用户信息失败')),
+    })
+    // #endif
+    // #ifndef MP-WEIXIN
+    reject(new Error('仅支持微信小程序'))
+    // #endif
+  })
 }

@@ -31,7 +31,7 @@ const { onAuthRequired, onResponseRefreshToken } = createServerTokenAuthenticati
       }
       catch (error) {
         // 切换到登录页
-        toLoginPage({ mode: 'reLaunch' })
+        toLoginPage()
         throw error
       }
     },

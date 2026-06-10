@@ -2,7 +2,7 @@ import type { IUserInfoRes } from '@/api/types/login'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
-  getUserInfo,
+  getWechatUserInfo,
 } from '@/api/login'
 
 // 初始化状态
@@ -19,8 +19,12 @@ export const useUserStore = defineStore(
     // 定义用户信息
     const userInfo = ref<IUserInfoRes>({ ...userInfoState })
     // 设置用户信息
-    const setUserInfo = (val: IUserInfoRes) => {
+    const setUserInfo = (val: IUserInfoRes & { id?: number }) => {
       console.log('设置用户信息', val)
+      // 后端返回 id 字段，映射为本地 userId
+      if (val.id !== undefined) {
+        val.userId = val.id
+      }
       // 若头像为空 则使用默认头像
       if (!val.avatar) {
         val.avatar = userInfoState.avatar
@@ -42,7 +46,7 @@ export const useUserStore = defineStore(
      * 获取用户信息
      */
     const fetchUserInfo = async () => {
-      const res = await getUserInfo()
+      const res = await getWechatUserInfo()
       setUserInfo(res)
       return res
     }

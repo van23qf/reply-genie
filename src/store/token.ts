@@ -9,7 +9,10 @@ import {
   logout as _logout,
   refreshToken as _refreshToken,
   wxLogin as _wxLogin,
+  getWechatUserInfo,
   getWxCode,
+  miniDecrypt,
+  miniLogin,
 } from '@/api/login'
 import { isDoubleTokenRes, isSingleTokenRes } from '@/api/types/login'
 import { isDoubleTokenMode } from '@/utils'
@@ -36,6 +39,9 @@ export const useTokenStore = defineStore(
 
     // 添加一个时间戳 ref 作为响应式依赖
     const nowTime = ref(Date.now())
+
+    // 登录弹窗显示状态
+    const showLoginPopup = ref(false)
     /**
      * 更新响应式数据:now
      * 确保isTokenExpired/isRefreshTokenExpired重新计算,而不是用错误过期缓存值
@@ -174,8 +180,74 @@ export const useTokenStore = defineStore(
     }
 
     /**
-     * 退出登录 并 删除用户信息
+     * 微信小程序登录（完整流程）
+     * 注意：getWxUserProfile 必须在用户手势（tap）中调用，
+     * 因此由调用方在 tap 事件中获取后传入
+     * @param profileRes wx.getUserProfile 的返回结果
      */
+    const miniWxLogin = async (profileRes: { encryptedData: string, iv: string }) => {
+      try {
+        // 1. 获取微信小程序登录的code
+        const code = await getWxCode()
+        console.log('微信登录-code: ', code)
+
+        // 2. 用code换取openid和session_key
+        const loginRes = await miniLogin(code.code)
+        console.log('微信登录-session: ', loginRes)
+
+        // 3. 解密用户信息，换取access_token
+        const decryptRes = await miniDecrypt({
+          openid: loginRes.openid,
+          session_key: loginRes.session_key,
+          encryptedData: profileRes.encryptedData,
+          iv: profileRes.iv,
+        })
+        console.log('微信登录-decrypt: ', decryptRes)
+
+        // 4. 保存token（使用单token模式，过期时间设为7天）
+        const tokenData: IAuthLoginRes = {
+          token: decryptRes.access_token,
+          expiresIn: 7 * 24 * 60 * 60,
+        }
+        setTokenInfo(tokenData)
+
+        // 5. 通过token获取完整用户信息（含真实userId）
+        const userStore = useUserStore()
+        try {
+          const userInfo = await getWechatUserInfo()
+          userStore.setUserInfo(userInfo)
+        }
+        catch {
+          // 获取用户信息失败时，使用 decrypt 返回的昵称和头像兜底
+          userStore.setUserInfo({
+            userId: -1,
+            username: '',
+            nickname: decryptRes.nickname || '微信用户',
+            avatar: decryptRes.avatar || userStore.userInfo.avatar,
+          })
+        }
+
+        // 6. 隐藏登录弹窗
+        showLoginPopup.value = false
+
+        uni.showToast({
+          title: '登录成功',
+          icon: 'success',
+        })
+      }
+      catch (error) {
+        console.error('微信小程序登录失败:', error)
+        uni.showToast({
+          title: '登录失败，请重试',
+          icon: 'error',
+        })
+        throw error
+      }
+      finally {
+        updateNowTime()
+      }
+    }
+
     const logout = async () => {
       try {
         // TODO 实现自己的退出登录逻辑
@@ -249,6 +321,32 @@ export const useTokenStore = defineStore(
         return isDoubleTokenRes(tokenInfo.value) ? tokenInfo.value.accessToken : ''
       }
     })
+    /**
+     * 检查登录状态
+     * - 有token则调用 /api/v1/wechat/user/info 验证有效性
+     * - 无token或验证失败则显示登录弹窗
+     */
+    const checkAuth = async () => {
+      updateNowTime()
+      const token = getValidToken.value
+
+      if (!token) {
+        showLoginPopup.value = true
+        return false
+      }
+
+      try {
+        const userInfo = await getWechatUserInfo()
+        const userStore = useUserStore()
+        userStore.setUserInfo(userInfo)
+        showLoginPopup.value = false
+        return true
+      }
+      catch {
+        showLoginPopup.value = true
+        return false
+      }
+    }
 
     /**
      * 检查是否有登录信息（不考虑token是否过期）
@@ -297,7 +395,12 @@ export const useTokenStore = defineStore(
       // 核心API方法
       login,
       wxLogin,
+      miniWxLogin,
       logout,
+      checkAuth,
+
+      // 登录弹窗状态
+      showLoginPopup,
 
       // 认证状态判断（最常用的）
       hasLogin: hasValidLogin,

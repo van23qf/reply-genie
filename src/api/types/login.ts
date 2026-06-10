@@ -36,6 +36,30 @@ export interface IUserInfoRes {
   [key: string]: any // 允许其他扩展字段
 }
 
+// 微信小程序登录 - 获取 session_key 响应
+export interface IMiniLoginRes {
+  openid: string
+  session_key: string
+}
+
+// 微信小程序登录 - 解密结果响应
+export interface IMiniDecryptRes {
+  access_token: string
+  nickname: string
+  avatar: string
+}
+
+// 微信获取用户信息结果（wx.getUserProfile）
+export interface IWxUserProfile {
+  encryptedData: string
+  iv: string
+  userInfo: {
+    nickName: string
+    avatarUrl: string
+    [key: string]: any
+  }
+}
+
 // 认证存储数据结构
 export interface AuthStorage {
   mode: AuthMode

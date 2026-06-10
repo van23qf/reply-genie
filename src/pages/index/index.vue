@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
 import { getSuggestions } from '@/api/suggestions'
+import { useTokenStore, useUserStore } from '@/store'
+
+const userStore = useUserStore()
+const tokenStore = useTokenStore()
+
+const statusBarHeight = uni.getSystemInfoSync().statusBarHeight || 0
 
 // ===================== 类型定义 =====================
 interface AIResponse {
@@ -267,6 +273,15 @@ function scrollToBottom() {
     <view class="orb orb-1" />
     <view class="orb orb-2" />
     <view class="orb orb-3" />
+
+    <!-- 用户信息栏 -->
+    <view v-if="tokenStore.hasLogin" class="user-bar" :style="{ top: `${statusBarHeight}px` }">
+      <image class="user-bar-avatar" :src="userStore.userInfo.avatar" mode="aspectFill" />
+      <view class="user-bar-text">
+        <text class="user-bar-nickname">{{ userStore.userInfo.nickname }}</text>
+        <text class="user-bar-id">ID: {{ userStore.userInfo.userId }}</text>
+      </view>
+    </view>
 
     <!-- 主内容 -->
     <view class="main-content">
@@ -638,10 +653,46 @@ function scrollToBottom() {
   flex-direction: column;
 }
 
+/* ===================== 用户信息栏 ===================== */
+.user-bar {
+  position: fixed;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 32rpx;
+}
+
+.user-bar-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 232, 162, 0.3);
+  flex-shrink: 0;
+}
+
+.user-bar-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+}
+
+.user-bar-nickname {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #e8f5f0;
+}
+
+.user-bar-id {
+  font-size: 20rpx;
+  color: #e8f5f0;
+}
+
 /* ===================== 头部 ===================== */
 .header {
   text-align: center;
-  padding: 100rpx 32rpx 40rpx;
+  padding: 220rpx 32rpx 40rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -863,7 +914,7 @@ function scrollToBottom() {
   bottom: 0;
   z-index: 50;
   padding: 0 32rpx;
-  padding-top: calc(env(safe-area-inset-top) + 100rpx);
+  padding-top: calc(env(safe-area-inset-top) + 180rpx);
   padding-bottom: env(safe-area-inset-bottom);
   background: #060b09;
   display: flex;

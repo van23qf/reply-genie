@@ -1,9 +1,9 @@
-import { getUserInfo } from '@/api/login'
+import { getWechatUserInfo } from '@/api/login'
 import { describe, expect, it, vi } from 'vitest'
 import { useUserStore } from './user'
 
 vi.mock('@/api/login', () => ({
-  getUserInfo: vi.fn(),
+  getWechatUserInfo: vi.fn(),
 }))
 
 describe('useUserStore', () => {
@@ -59,7 +59,7 @@ describe('useUserStore', () => {
   it('fetchUserInfo：调用 API 并将结果写入 store', async () => {
     const store = useUserStore()
     const mockUser = { userId: 42, username: 'api_user', nickname: 'API User', avatar: 'https://x.com/a.png' }
-    vi.mocked(getUserInfo).mockResolvedValue(mockUser)
+    vi.mocked(getWechatUserInfo).mockResolvedValue(mockUser)
 
     await store.fetchUserInfo()
 

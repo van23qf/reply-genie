@@ -3,6 +3,9 @@ import { ref } from 'vue'
 import FgTabbar from '@/tabbar/index.vue'
 import { isPageTabbar } from './tabbar/store'
 import { currRoute } from './utils'
+import { useTokenStore } from '@/store'
+
+const tokenStore = useTokenStore()
 
 const isCurrentPageTabbar = ref(true)
 onShow(() => {
@@ -15,6 +18,11 @@ onShow(() => {
   else {
     isCurrentPageTabbar.value = isPageTabbar(path)
   }
+
+  // 微信小程序检查登录状态
+  // #ifdef MP-WEIXIN
+  tokenStore.checkAuth()
+  // #endif
 })
 
 const helloKuRoot = ref('Hello AppKuVue')
@@ -36,5 +44,10 @@ defineExpose({
     <KuRootView />
 
     <FgTabbar v-if="isCurrentPageTabbar" />
+
+    <!-- 微信小程序登录弹窗 -->
+    <!-- #ifdef MP-WEIXIN -->
+    <fg-login-popup />
+    <!-- #endif -->
   </view>
 </template>
