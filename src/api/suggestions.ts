@@ -27,7 +27,8 @@ export interface ExecuteResponse {
 
 /** 获取回话建议 */
 export function getSuggestions(params: SuggestionParams) {
-  return http.post<ExecuteResponse>('/api/v1/agent-flows/2/execute', {
+  const agentId = import.meta.env.VITE_REPLY_AGENT_ID
+  return http.post<ExecuteResponse>(`/api/v1/agent-flows/${agentId}/execute`, {
     input: params,
   })
 }

@@ -31,6 +31,8 @@ interface ImportMetaEnv {
   readonly VITE_AUTH_MODE: 'single' | 'double'
   /** 是否清除console */
   readonly VITE_DELETE_CONSOLE: string
+  /** 获取回复的智能体ID */
+  readonly VITE_REPLY_AGENT_ID: string
   // 更多环境变量...
 }
 
